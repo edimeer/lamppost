@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#ffe27a"/>
+  <g fill="#ff5c8a" style="mix-blend-mode:multiply">
+    <path d="M60 170h220l-20 60H80z"/><path d="M300 150h240l-20 80H320z"/><path d="M560 180h190l-18 56H578z"/>
+  </g>
+  <g fill="#2438b8">
+    <rect x="86" y="230" width="10" height="170"/><rect x="244" y="230" width="10" height="170"/>
+    <rect x="326" y="230" width="10" height="170"/><rect x="504" y="230" width="10" height="170"/>
+    <rect x="586" y="236" width="10" height="164"/><rect x="714" y="236" width="10" height="164"/>
+    <rect y="398" width="800" height="52"/>
+  </g>
+  <g fill="#5fd4b0">
+    <circle cx="130" cy="330" r="26"/><circle cx="178" cy="336" r="22"/><circle cx="214" cy="326" r="20"/>
+    <circle cx="372" cy="320" r="30"/><circle cx="430" cy="330" r="26"/><circle cx="474" cy="318" r="22"/>
+    <circle cx="628" cy="336" r="24"/><circle cx="676" cy="330" r="26"/>
+  </g>
+  <g fill="#ff5c8a" style="mix-blend-mode:multiply">
+    <rect x="96" y="344" width="148" height="56"/><rect x="336" y="348" width="168" height="52"/><rect x="596" y="350" width="118" height="50"/>
+  </g>
+  <circle cx="680" cy="84" r="52" fill="#ff5c8a" style="mix-blend-mode:multiply"/>
+</svg>
