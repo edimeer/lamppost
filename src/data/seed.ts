@@ -27,11 +27,12 @@ export interface Database {
   sessionOrganizerId: string
 }
 
-export const DATABASE_VERSION = 1
+export const DATABASE_VERSION = 2
 
 const PACIFIC = 'America/Los_Angeles'
 const YOU_ATTENDEE_ID = 'att-you'
 const YOU_ORGANIZER_ID = 'org-alder-street'
+const SAMPLE_PROFILE = { name: 'Edi', email: 'edi@example.com' }
 
 const organizers: Organizer[] = [
   {
@@ -875,10 +876,26 @@ function seedOneEvent(seed: SeedEvent, now: Date): CommunityEvent {
   }
 }
 
+/**
+ * Brings data saved by an older version of the app up to date. Sample data is
+ * copied into each browser on first visit, so changing it above only reaches new
+ * visitors. Everyone else gets this step, which keeps their RSVPs and events.
+ */
+export function upgradeDatabase(database: Database): Database {
+  if (database.version < 2) {
+    const you = database.attendees.find((a) => a.id === database.sessionAttendeeId)
+    // Replace only the old sample profile, never a name someone typed in.
+    if (you?.name === 'Jordan Lee' && you.email === 'jordan.lee@example.com') {
+      Object.assign(you, SAMPLE_PROFILE)
+    }
+  }
+  return { ...database, version: DATABASE_VERSION }
+}
+
 export function buildSeedDatabase(now: Date = new Date()): Database {
   const random = createRandom(20261107)
   const attendees: Attendee[] = [
-    { id: YOU_ATTENDEE_ID, name: 'Jordan Lee', email: 'jordan.lee@example.com' },
+    { id: YOU_ATTENDEE_ID, ...SAMPLE_PROFILE },
   ]
   const rsvps: Rsvp[] = []
   const pick = (list: string[]) => list[Math.floor(random() * list.length)]

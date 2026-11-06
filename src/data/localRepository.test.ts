@@ -134,7 +134,7 @@ describe('LocalRepository', () => {
   describe('RSVPs', () => {
     it('takes a spot, then frees it on cancel', async () => {
       const event = await repository.createEvent(eventInput(), { publish: true })
-      const going = await repository.submitRsvp(event.id, guest('Jordan', 2))
+      const going = await repository.submitRsvp(event.id, guest('Edi', 2))
       expect(going.viewer.rsvp?.status).toBe('going')
       expect(going.spotsLeft).toBe(0)
 
@@ -146,7 +146,7 @@ describe('LocalRepository', () => {
     it('puts you on the waitlist when your party does not fit', async () => {
       const event = await repository.createEvent(eventInput(), { publish: true })
       await repository.addGuest(event.id, guest('Ada'))
-      const result = await repository.submitRsvp(event.id, guest('Jordan', 2))
+      const result = await repository.submitRsvp(event.id, guest('Edi', 2))
       expect(result.viewer.rsvp?.status).toBe('waitlisted')
       expect(result.goingCount).toBe(1)
       expect(result.waitlistCount).toBe(2)
@@ -184,19 +184,19 @@ describe('LocalRepository', () => {
 
     it('rejects a party size change that does not fit', async () => {
       const event = await repository.createEvent(eventInput(), { publish: true })
-      await repository.submitRsvp(event.id, guest('Jordan', 1))
+      await repository.submitRsvp(event.id, guest('Edi', 1))
       await repository.addGuest(event.id, guest('Ada'))
-      await expectCode(repository.submitRsvp(event.id, guest('Jordan', 2)), 'conflict')
+      await expectCode(repository.submitRsvp(event.id, guest('Edi', 2)), 'conflict')
     })
 
     it('refuses RSVPs on canceled and finished events', async () => {
       const event = await repository.createEvent(eventInput(), { publish: true })
       await repository.cancelEvent(event.id, 'Rain')
-      await expectCode(repository.submitRsvp(event.id, guest('Jordan')), 'conflict')
+      await expectCode(repository.submitRsvp(event.id, guest('Edi')), 'conflict')
       await repository.reopenEvent(event.id)
 
       now = new Date('2026-12-01T00:00:00Z')
-      await expectCode(repository.submitRsvp(event.id, guest('Jordan')), 'conflict')
+      await expectCode(repository.submitRsvp(event.id, guest('Edi')), 'conflict')
     })
   })
 
@@ -241,7 +241,7 @@ describe('LocalRepository', () => {
 
     it('blocks moving an event with RSVPs back to draft', async () => {
       const event = await repository.createEvent(eventInput(), { publish: true })
-      await repository.submitRsvp(event.id, guest('Jordan'))
+      await repository.submitRsvp(event.id, guest('Edi'))
       await expectCode(repository.unpublishEvent(event.id), 'conflict')
     })
 
@@ -277,12 +277,44 @@ describe('LocalRepository', () => {
       const store = createMemoryStore()
       const first = new LocalRepository({ store, now: () => NOW })
       const created = await first.createEvent(eventInput(), { publish: true })
-      await first.submitRsvp(created.id, guest('Jordan'))
+      await first.submitRsvp(created.id, guest('Edi'))
 
       const second = new LocalRepository({ store, now: () => NOW })
       const reloaded = await second.getEvent(created.id)
       expect(reloaded.title).toBe('Test Picnic')
       expect(reloaded.viewer.rsvp?.status).toBe('going')
+    })
+
+    function savedByVersionOne(name: string, email: string) {
+      const database = buildSeedDatabase(NOW)
+      const you = database.attendees.find((a) => a.id === database.sessionAttendeeId)
+      Object.assign(you ?? {}, { name, email })
+      const store = createMemoryStore()
+      store.set('lamppost:database', JSON.stringify({ ...database, version: 1 }))
+      return store
+    }
+
+    it('uses Edi as the sample profile', async () => {
+      expect((await repository.getSession()).attendee.name).toBe('Edi')
+    })
+
+    it('renames the old sample profile and keeps saved data', async () => {
+      const store = savedByVersionOne('Jordan Lee', 'jordan.lee@example.com')
+      const upgraded = new LocalRepository({ store, now: () => NOW })
+
+      expect((await upgraded.getSession()).attendee).toMatchObject({
+        name: 'Edi',
+        email: 'edi@example.com',
+      })
+      expect((await upgraded.getEvent('evt-seed-swap')).viewer.rsvp?.status).toBe('going')
+      expect(JSON.parse(store.get('lamppost:database') ?? '{}').version).toBe(2)
+      expect(store.get('lamppost:database:corrupt')).toBeNull()
+    })
+
+    it('keeps a name the visitor chose', async () => {
+      const store = savedByVersionOne('Priya Shah', 'priya@example.com')
+      const upgraded = new LocalRepository({ store, now: () => NOW })
+      expect((await upgraded.getSession()).attendee.name).toBe('Priya Shah')
     })
 
     it('rebuilds from sample data when storage is corrupt', async () => {

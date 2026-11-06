@@ -1,7 +1,7 @@
 import { getEventState } from '../lib/eventState'
 import { capacityBelowTakenMessage, isEmail, isHttpUrl, LIMITS } from '../lib/validation'
 import { RepositoryError, type Repository } from './repository'
-import { buildSeedDatabase, DATABASE_VERSION, type Database } from './seed'
+import { buildSeedDatabase, DATABASE_VERSION, upgradeDatabase, type Database } from './seed'
 import type { KeyValueStore } from './storage'
 import {
   ONLINE_LOCATION,
@@ -87,9 +87,11 @@ export class LocalRepository implements Repository {
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as Database
-        if (parsed.version === DATABASE_VERSION && Array.isArray(parsed.events)) {
-          this.cache = parsed
-          return parsed
+        if (parsed.version <= DATABASE_VERSION && Array.isArray(parsed.events)) {
+          const upgraded = upgradeDatabase(parsed)
+          if (upgraded.version !== parsed.version) this.persist(upgraded)
+          this.cache = upgraded
+          return upgraded
         }
       } catch {
         // Fall through to rebuild below.
